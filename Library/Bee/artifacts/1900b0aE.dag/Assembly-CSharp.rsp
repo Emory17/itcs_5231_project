@@ -361,7 +361,10 @@
 "Assets/Scripts/CameraManager.cs"
 "Assets/Scripts/GroundChecker.cs"
 "Assets/Scripts/InputReader.cs"
+"Assets/Scripts/MainMenu.cs"
+"Assets/Scripts/MouseHover.cs"
 "Assets/Scripts/PlayerController.cs"
+"Assets/Scripts/SceneLoader.cs"
 "Assets/Scripts/Utils/Timer.cs"
 "Assets/Settings/PlayerInputActions.cs"
 -langversion:9.0
