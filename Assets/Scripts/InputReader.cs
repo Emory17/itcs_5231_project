@@ -13,7 +13,7 @@ namespace Platformer
         public event UnityAction EnableMouseControlCamera = delegate { };
         public event UnityAction DisableMouseControlCamera = delegate { };
         public event UnityAction<bool> Jump = delegate { };
-        //public event UnityAction<bool> Dash = delegate { };
+        public event UnityAction<bool> Dash = delegate { };
         //public event UnityAction Attack = delegate { };
 
         PlayerInputActions inputActions;
@@ -72,9 +72,17 @@ namespace Platformer
             }
         }
 
-        public void OnAttack(InputAction.CallbackContext context)
+        public void OnDash(InputAction.CallbackContext context)
         {
-
+            switch (context.phase)
+            {
+                case InputActionPhase.Started:
+                    Dash.Invoke(true);
+                    break;
+                case InputActionPhase.Canceled:
+                    Dash.Invoke(false);
+                    break;
+            }
         }
 
         public void OnRun(InputAction.CallbackContext context)
