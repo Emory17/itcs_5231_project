@@ -27,6 +27,11 @@ namespace Platformer
         [SerializeField] float jumpCooldown = 0f;
         [SerializeField] float gravityMultiplier = 3f;
 
+        [Header("Dash Settings")]
+        [SerializeField] float dashForce = 5f;
+        [SerializeField] float dashDuration = 0.5f;
+        [SerializeField] float dashCooldown = 2f;
+
         [Header("Bounce Settings")]
         [SerializeField] float bounceForce = 10f;
 
@@ -35,15 +40,18 @@ namespace Platformer
         float currentSpeed;
         float velocity;
         float jumpVelocity;
+        float dashVelocity = 1f;
+
         bool groundOverride = false;
+        bool canDash = true;
 
         Vector3 movement;
 
         List<Timer> timers;
         CountdownTimer jumpTimer;
         CountdownTimer jumpCooldownTimer;
-
-       
+        CountdownTimer dashTimer;
+        CountdownTimer dashCooldownTimer;
 
         void Awake()
         {
@@ -63,19 +71,24 @@ namespace Platformer
             // Setup timers
             jumpTimer = new CountdownTimer(jumpDuration);
             jumpCooldownTimer = new CountdownTimer(jumpCooldown);
+            dashTimer = new CountdownTimer(dashDuration);
+            dashCooldownTimer = new CountdownTimer(dashCooldown);
 
             jumpTimer.OnTimerStart += () => jumpVelocity = jumpForce;
             jumpTimer.OnTimerStop += () => jumpCooldownTimer.Start();
 
-            timers = new(2) { jumpTimer, jumpCooldownTimer };
+            dashTimer.OnTimerStart += () => dashVelocity = dashForce;
+            dashTimer.OnTimerStop += () => {
+                dashVelocity = 1f;
+                dashCooldownTimer.Start();
+            };
 
-            jumpTimer.OnTimerStop += () => jumpCooldownTimer.Start();
+            timers = new(4) { jumpTimer, jumpCooldownTimer, dashTimer, dashCooldownTimer };
         }
 
         private void Start()
         {
             input.EnablePlayerActions();
-            Debug.Log("Hi");
         }
 
         void OnTriggerEnter(Collider other)
@@ -83,6 +96,7 @@ namespace Platformer
             if (other.gameObject.CompareTag("Bounce"))
             {
                 jumpVelocity = bounceForce;
+                dashTimer.Stop();
                 groundOverride = true;
             }
         }
@@ -98,11 +112,13 @@ namespace Platformer
         void OnEnable()
         {
             input.Jump += OnJump;
+            input.Dash += OnDash;
         }
 
         void OnDisable()
         {
             input.Jump -= OnJump;
+            input.Dash -= OnDash;
         }
 
         void OnJump(bool performed)
@@ -117,6 +133,19 @@ namespace Platformer
             }
         }
 
+        void OnDash(bool performed)
+        {
+            if (performed && !dashTimer.IsRunning && !dashCooldownTimer.IsRunning && canDash)
+            {
+                dashTimer.Start();
+                canDash = false;
+            }
+            else if (!performed && dashTimer.IsRunning)
+            {
+                dashTimer.Stop();
+            }
+        }
+
         void Update()
         {
             movement = new Vector3(input.Direction.x, 0f, input.Direction.y);
@@ -127,6 +156,7 @@ namespace Platformer
             HandleJump();
             HandleMovement();
             HandleTimers();
+            HandleStates();
         }
 
         void HandleTimers()
@@ -137,6 +167,14 @@ namespace Platformer
             }
         }
 
+        void HandleStates()
+        {
+            if (groundChecker.IsGrounded)
+            {
+                canDash = true;
+            }
+        }
+
         public void HandleJump()
         {
              // If not jumping and grounded, keep jump velocity at 0
@@ -144,6 +182,13 @@ namespace Platformer
              {
                  jumpVelocity = 0f;
                  return;
+             }
+
+             if(dashTimer.IsRunning)
+             {
+                jumpVelocity = 0f;
+                rb.velocity = new Vector3(rb.velocity.x, jumpVelocity, rb.velocity.z);
+                return;
              }
 
              if (!jumpTimer.IsRunning)
@@ -158,20 +203,28 @@ namespace Platformer
 
         void HandleMovement()
         {
-            //Rotate Direction to match camera
-            var adjustedDirection = Quaternion.AngleAxis(mainCam.eulerAngles.y, Vector3.up) * movement;
-            if(adjustedDirection.magnitude > 0f)
+            if (dashTimer.IsRunning)
             {
-                HandleRotation(adjustedDirection);
-                HandleHorizontalMovement(adjustedDirection);
-                SmoothSpeed(adjustedDirection.magnitude);
-            } 
+                HandleHorizontalMovement(transform.forward);
+            }
             else
             {
-                SmoothSpeed(0f);
+                //Rotate Direction to match camera
+                var adjustedDirection = Quaternion.AngleAxis(mainCam.eulerAngles.y, Vector3.up) * movement;
 
-                //Reset Velocity
-                rb.velocity = new Vector3(0f, rb.velocity.y, 0f);
+                if (adjustedDirection.magnitude > 0f)
+                {
+                    HandleRotation(adjustedDirection);
+                    HandleHorizontalMovement(adjustedDirection);
+                    SmoothSpeed(adjustedDirection.magnitude);
+                }
+                else
+                {
+                    SmoothSpeed(0f);
+
+                    //Reset Velocity
+                    rb.velocity = new Vector3(0f, rb.velocity.y, 0f);
+                }
             }
         }
 
@@ -185,7 +238,7 @@ namespace Platformer
         void HandleHorizontalMovement(Vector3 adjustedDirection)
         {
             // Move the player
-            Vector3 velocity = adjustedDirection * (moveSpeed * Time.fixedDeltaTime);
+            Vector3 velocity = adjustedDirection * (moveSpeed * dashVelocity * Time.fixedDeltaTime);
             rb.velocity = new Vector3(velocity.x, rb.velocity.y, velocity.z);
         }
 
