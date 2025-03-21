@@ -26,12 +26,16 @@ namespace Platformer
         [SerializeField] float jumpDuration = 0.5f;
         [SerializeField] float jumpCooldown = 0f;
         [SerializeField] float gravityMultiplier = 3f;
-        
+
+        [Header("Bounce Settings")]
+        [SerializeField] float bounceForce = 10f;
+
         Transform mainCam;
 
         float currentSpeed;
         float velocity;
         float jumpVelocity;
+        bool groundOverride = false;
 
         Vector3 movement;
 
@@ -71,6 +75,24 @@ namespace Platformer
         private void Start()
         {
             input.EnablePlayerActions();
+            Debug.Log("Hi");
+        }
+
+        void OnTriggerEnter(Collider other)
+        {
+            if (other.gameObject.CompareTag("Bounce"))
+            {
+                jumpVelocity = bounceForce;
+                groundOverride = true;
+            }
+        }
+
+        void OnTriggerExit(Collider other)
+        {
+            if (other.gameObject.CompareTag("Bounce"))
+            {
+                groundOverride = false;
+            }
         }
 
         void OnEnable()
@@ -118,7 +140,7 @@ namespace Platformer
         public void HandleJump()
         {
              // If not jumping and grounded, keep jump velocity at 0
-             if (!jumpTimer.IsRunning && groundChecker.IsGrounded)
+             if (!jumpTimer.IsRunning && groundChecker.IsGrounded && !groundOverride)
              {
                  jumpVelocity = 0f;
                  return;
