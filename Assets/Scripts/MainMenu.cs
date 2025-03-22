@@ -6,16 +6,8 @@ namespace Platformer
 {
     public class MainMenu : MonoBehaviour
     {
-    public bool isPlay; 
-    public bool isQuit;
-    void OnMouseUp(){
-        if(isPlay){
-            SceneManager.LoadScene(1);
-            GetComponent<Renderer>().material.color = Color.cyan;
-            }
-        if(isQuit){
-            Application.Quit();
-        }
+    public void PlayButton(){
+        SceneManager.LoadScene("EmoryTest");
     }
     }
 }
