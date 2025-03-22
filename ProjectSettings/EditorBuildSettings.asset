@@ -9,6 +9,9 @@ EditorBuildSettings:
     path: Assets/Scenes/MainMenu.unity
     guid: 559da3dcedf48ed41918018ff1d935b2
   - enabled: 1
+    path: Assets/Scenes/ConnorTest.unity
+    guid: 154dfdea715099543a63d01fe6da9e7a
+  - enabled: 1
     path: Assets/Scenes/EmoryTest.unity
     guid: e03ff3bbfef29d943ba06fd8634d80d0
   m_configObjects: {}
