@@ -97,6 +97,8 @@ namespace Platformer
             {
                 jumpVelocity = bounceForce;
                 dashTimer.Stop();
+                dashCooldownTimer.Stop();
+                canDash = true;
                 groundOverride = true;
             }
         }

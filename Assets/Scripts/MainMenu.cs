@@ -7,7 +7,7 @@ namespace Platformer
     public class MainMenu : MonoBehaviour
     {
     public void PlayButton(){
-        SceneManager.LoadScene("ConnorTest");
+        SceneManager.LoadScene("EmoryTest");
     }
     }
 }
