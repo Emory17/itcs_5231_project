@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 using Cinemachine;
 using KBCore.Refs;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Utilities;
 
 
@@ -15,10 +17,11 @@ namespace Platformer
         //[SerializeField, Self] Animator animator;
         [SerializeField, Anywhere] CinemachineFreeLook freeLookVCam;
         [SerializeField, Anywhere] InputReader input;
+        [SerializeField] Rigidbody laserPrefab;
 
         [Header("Movement Settings")]
-        [SerializeField] float moveSpeed = 6f;
-        [SerializeField] float rotationSpeed = 15f;
+        [SerializeField] float moveSpeed = 400f;
+        [SerializeField] float rotationSpeed = 300f;
         [SerializeField] float smoothTime = 0.2f;
 
         [Header("Jump Settings")]
@@ -27,10 +30,18 @@ namespace Platformer
         [SerializeField] float jumpCooldown = 0f;
         [SerializeField] float gravityMultiplier = 3f;
 
+        [Header("Health Settings")]
+        [SerializeField] int maxHealth = 3;
+        [SerializeField] float invincibilityTime = 1f;
+
         [Header("Dash Settings")]
         [SerializeField] float dashForce = 5f;
         [SerializeField] float dashDuration = 0.5f;
         [SerializeField] float dashCooldown = 2f;
+
+        [Header("Attack Settings")]
+        [SerializeField] float attackCooldown = 5f;
+        [SerializeField] float shootSpeed = 300f;
 
         [Header("Bounce Settings")]
         [SerializeField] float bounceForce = 10f;
@@ -42,6 +53,10 @@ namespace Platformer
         float jumpVelocity;
         float dashVelocity = 1f;
 
+        int chealth;
+        bool invincible = false;
+        Vector3 respawn = new Vector3(0, 2, 0);
+
         bool groundOverride = false;
         bool canDash = true;
 
@@ -52,6 +67,8 @@ namespace Platformer
         CountdownTimer jumpCooldownTimer;
         CountdownTimer dashTimer;
         CountdownTimer dashCooldownTimer;
+        CountdownTimer invincibilityTimer;
+        CountdownTimer attackCooldownTimer;
 
         void Awake()
         {
@@ -63,6 +80,8 @@ namespace Platformer
 
             rb.freezeRotation = true;
 
+            chealth = maxHealth;
+
             SetupTimers();
         }
 
@@ -73,9 +92,14 @@ namespace Platformer
             jumpCooldownTimer = new CountdownTimer(jumpCooldown);
             dashTimer = new CountdownTimer(dashDuration);
             dashCooldownTimer = new CountdownTimer(dashCooldown);
+            invincibilityTimer = new CountdownTimer(invincibilityTime);
+            attackCooldownTimer = new CountdownTimer(attackCooldown);
 
             jumpTimer.OnTimerStart += () => jumpVelocity = jumpForce;
             jumpTimer.OnTimerStop += () => jumpCooldownTimer.Start();
+
+            invincibilityTimer.OnTimerStart += () => invincible = true;
+            invincibilityTimer.OnTimerStop += () => invincible = false;
 
             dashTimer.OnTimerStart += () => dashVelocity = dashForce;
             dashTimer.OnTimerStop += () => {
@@ -83,7 +107,7 @@ namespace Platformer
                 dashCooldownTimer.Start();
             };
 
-            timers = new(4) { jumpTimer, jumpCooldownTimer, dashTimer, dashCooldownTimer };
+            timers = new(6) { jumpTimer, jumpCooldownTimer, dashTimer, dashCooldownTimer, invincibilityTimer, attackCooldownTimer };
         }
 
         private void Start()
@@ -101,6 +125,21 @@ namespace Platformer
                 canDash = true;
                 groundOverride = true;
             }
+            if (other.gameObject.CompareTag("Data"))
+            {
+                Destroy(other.gameObject);
+            }
+        }
+
+        private void OnCollisionEnter(Collision other)
+        {
+            if (other.gameObject.CompareTag("Enemy"))
+            {
+                if (!invincible)
+                {
+                    chealth -= 1;
+                }
+            }
         }
 
         void OnTriggerExit(Collider other)
@@ -115,12 +154,14 @@ namespace Platformer
         {
             input.Jump += OnJump;
             input.Dash += OnDash;
+            input.Shoot += OnShoot;
         }
 
         void OnDisable()
         {
             input.Jump -= OnJump;
             input.Dash -= OnDash;
+            input.Shoot -= OnShoot;
         }
 
         void OnJump(bool performed)
@@ -148,9 +189,31 @@ namespace Platformer
             }
         }
 
+        void OnShoot()
+        {
+            if (!attackCooldownTimer.IsRunning)
+            {
+                Vector3 laserPosition = transform.position + transform.forward + (0.75f * Vector3.up);
+                var projectile = Instantiate(laserPrefab, laserPosition, transform.rotation);
+                projectile.velocity = transform.forward * shootSpeed;
+                attackCooldownTimer.Start();
+            }
+        }
+
         void Update()
         {
             movement = new Vector3(input.Direction.x, 0f, input.Direction.y);
+
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                #if UNITY_EDITOR
+                    // If running in the Unity Editor, stop playing the scene.
+                    UnityEditor.EditorApplication.isPlaying = false;
+                #else
+                    // If running as a standalone build, quit the application.
+                    Application.Quit();
+                #endif
+            }
         }
 
         private void FixedUpdate()
@@ -159,6 +222,7 @@ namespace Platformer
             HandleMovement();
             HandleTimers();
             HandleStates();
+            HandleHealth();
         }
 
         void HandleTimers()
@@ -174,6 +238,15 @@ namespace Platformer
             if (groundChecker.IsGrounded)
             {
                 canDash = true;
+            }
+        }
+
+        void HandleHealth()
+        {
+            //respawn
+            if(chealth <= 0)
+            {
+                SceneManager.LoadScene("Level");
             }
         }
 

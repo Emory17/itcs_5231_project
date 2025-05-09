@@ -1,5 +1,6 @@
 using KBCore.Refs;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Platformer
 {
@@ -9,7 +10,6 @@ namespace Platformer
         [SerializeField] Rigidbody rb;
 
         Transform platform; // The platform, if any, we are on top of
-        Vector3 respawn = new Vector3 (0, 2, 0);
 
         void OnCollisionEnter(Collision other)
         {
@@ -24,9 +24,11 @@ namespace Platformer
             }
             if (other.gameObject.CompareTag("Respawn"))
             {
-                rb.position = respawn;
-                rb.rotation = Quaternion.identity;
-                rb.velocity = Vector3.zero;
+                SceneManager.LoadScene("Level");
+            }
+            if (other.gameObject.CompareTag("Exit"))
+            {
+                SceneManager.LoadScene("WinScreen");
             }
         }
 
