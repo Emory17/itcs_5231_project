@@ -8,7 +8,10 @@ namespace Platformer
 {
     public class ButtonMain : MonoBehaviour
     {
-        // Start is called before the first frame update
+        private void Awake()
+        {
+            Cursor.visible = true;
+        }
         public void LoadMainMenu()
         {
             SceneManager.LoadScene("MainMenu");

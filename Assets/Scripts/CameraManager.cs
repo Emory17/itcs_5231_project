@@ -17,6 +17,11 @@ namespace Platformer
         bool isRMBPressed;
         bool cameraMovementLock;
 
+        private void Awake()
+        {
+            Cursor.visible = false;
+        }
+
         void OnEnable()
         {
             input.Look += OnLook;
@@ -62,7 +67,6 @@ namespace Platformer
 
             // Unlock the cursor and make it visible
             Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
 
             // Reset the camera axis to prevent jumping when re-enabling mouse control
             freeLookVCam.m_XAxis.m_InputAxisValue = 0f;
