@@ -6,8 +6,13 @@ Cosmic Scout
 Goal: Collect All Data in the Level then reach the exit
 
 Controls:
+
 WASD to move
+
 Right Click to Control Camera
+
 Left Click to Shoot
+
 Space to Jump
+
 Left Shift to Dash
